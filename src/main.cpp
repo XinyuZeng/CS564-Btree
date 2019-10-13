@@ -68,11 +68,13 @@ void createRelationForward();
 void createRelationBackward();
 void createRelationRandom();
 void intTests();
+void intTests2();
 int intScan(BTreeIndex *index, int lowVal, Operator lowOp, int highVal, Operator highOp);
 void indexTests();
 void test1();
 void test2();
 void test3();
+void test4();
 void errorTests();
 void deleteRelation();
 
@@ -137,9 +139,10 @@ int main(int argc, char **argv)
 
 	File::remove(relationName);
 
-	test1();
-	test2();
-	test3();
+//	test1();
+//	test2();
+//	test3();
+    test4();
 	//errorTests();
 
   return 1;
@@ -176,6 +179,29 @@ void test3()
 	createRelationRandom();
 	indexTests();
 	deleteRelation();
+}
+
+void test4() {
+    std::cout << "--------------------" << std::endl;
+    std::cout << "createRelationRandom" << std::endl;
+    createRelationRandom();
+    if(testNum == 1)
+    {
+        intTests2();
+        try
+        {
+            File::remove(intIndexName);
+        }
+        catch(FileNotFoundException e)
+        {
+        }
+    }
+    deleteRelation();
+}
+
+void intTests2() {
+    std::cout << "Create a B+ Tree index on the integer field" << std::endl;
+    BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple, i), INTEGER);
 }
 
 // -----------------------------------------------------------------------------
