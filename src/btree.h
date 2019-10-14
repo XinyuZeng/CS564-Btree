@@ -291,8 +291,10 @@ class BTreeIndex {
    */
 	Operator	highOp;
 
-	
- public:
+	const void insertEntryHelper(bool isLeaf, const PageId rootPageID, PageKeyPair<int> newChildEntry,
+                                 RIDKeyPair<int> entryPair);
+
+public:
 
   /**
    * BTreeIndex Constructor. 
@@ -364,7 +366,11 @@ class BTreeIndex {
 	 * @throws ScanNotInitializedException If no scan has been initialized.
 	**/
 	const void endScan();
-	
+
+    const void placeEntry(RIDKeyPair<int> entryPair, LeafNodeInt *node);
+
+    const void splitLeaf(LeafNodeInt *oldLeafNode, LeafNodeInt *newLeafNode, PageKeyPair<int> newChildEntry,
+                         RIDKeyPair<int> entryPair);
 };
 
 }
