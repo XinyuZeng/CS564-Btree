@@ -369,8 +369,16 @@ public:
 
     const void placeEntry(RIDKeyPair<int> entryPair, LeafNodeInt *node);
 
-    const void splitLeaf(LeafNodeInt *oldLeafNode, LeafNodeInt *newLeafNode, PageKeyPair<int> newChildEntry,
-                         RIDKeyPair<int> entryPair);
+    const void splitLeaf(LeafNodeInt *leftLeafNode, PageKeyPair<int> newChildEntry, RIDKeyPair<int> entryPair,
+                         PageId leftPageId);
+
+    const void placeNewChild(PageKeyPair<int> newChildEntry, NonLeafNodeInt *node);
+
+    const void splitNonLeaf(NonLeafNodeInt *leftNonLeafNode, PageId leftPageId, PageKeyPair<int> newChildEntry);
+
+    const void changeRootPageNum(const PageId newRootPageNum);
+
+    const PageId findSmallestKey(NonLeafNodeInt *root);
 };
 
 }
