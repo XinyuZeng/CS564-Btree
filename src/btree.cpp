@@ -502,6 +502,9 @@ const void BTreeIndex::startScan(const void* lowValParm,
 
 const void BTreeIndex::scanNext(RecordId& outRid) 
 {
+    if (scanExecuting == false) {
+        throw ScanNotInitializedException();
+    }
     // read currentPageData, getNextEntry if valid
     // continue to next page if valid else break
     if (nextEntry < 0 || nextEntry >= leafOccupancy) {
