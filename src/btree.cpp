@@ -194,11 +194,11 @@ const void BTreeIndex::placeNewChild(PageKeyPair<int> &newChildEntry, NonLeafNod
         while (j >= i) {
             if (node->pageNoArray[j+1] != 0) {
                 node->pageNoArray[j+2] = node->pageNoArray[j+1];
-                node->keyArray[j+2] = node->keyArray[j+1];
+                node->keyArray[j+1] = node->keyArray[j];
             }
             j--;
         }
-        node->pageNoArray[i] = newChildEntry.pageNo;
+        node->pageNoArray[i+1] = newChildEntry.pageNo;
         node->keyArray[i] = newChildEntry.key;
     }
 }
@@ -446,6 +446,10 @@ const void BTreeIndex::startScan(const void* lowValParm,
         bool alreadyExceed = false;
         LeafNodeInt *leafNodeInt = (LeafNodeInt *) currentPageData;
         for (; i < leafOccupancy && leafNodeInt->ridArray[i].page_number != 0; ++i) {
+            // ToDO: delete
+//            if (lowValInt == 996) {
+//                std::cout << leafNodeInt->keyArray[i] << std::endl;
+//            }
             if (highOpParm == LT) {
                 if (leafNodeInt->keyArray[i] >= highValInt) {
                     alreadyExceed = true;
