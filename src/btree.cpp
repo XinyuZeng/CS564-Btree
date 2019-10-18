@@ -17,6 +17,7 @@
 #include "exceptions/end_of_file_exception.h"
 #include "exceptions/page_pinned_exception.h"
 #include "exceptions/page_not_pinned_exception.h"
+#include "exceptions/hash_not_found_exception.h"
 
 
 //#define DEBUG
@@ -73,9 +74,6 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
         rootPageNum = metaInfo->rootPageNo;
         bufMgr->unPinPage(file, headerPageNum, false);
     } else {
-//        Not necessary
-//        headerPageNum = 1;
-//        rootPageNum = 2;
         // init headerPage
         Page* headerPage;
         bufMgr->allocPage(file, headerPageNum, headerPage);
@@ -125,13 +123,17 @@ BTreeIndex::~BTreeIndex()
 {
     scanExecuting = false;
     bufMgr->flushFile(file);
-//    if (currentPageNum != 0)
-//        try {
-//            bufMgr->unPinPage(file, currentPageNum, true);
-//        } catch (PageNotPinnedException e) {
-//
-//        }
+    if (currentPageNum != 0) {
+        try {
+            bufMgr->unPinPage(file, currentPageNum, true);
+        } catch (PageNotPinnedException e) {
+
+        } catch (HashNotFoundException e) {
+
+        }
+    }
     delete file;
+    file = nullptr;
 }
 
 /**
@@ -158,9 +160,6 @@ const void BTreeIndex::insertEntry(const void *key, const RecordId rid)
     RIDKeyPair<int> entryPair;
     entryPair.set(rid, *(int *)key);
     insertEntryHelper(rootPageNum == 2, rootPageNum, newEntry, entryPair);
-    if(newEntry.pageNo != 0) {  // TODO: may not be necessary
-        changeRootPageNum(newEntry.pageNo);
-    }
 }
 
 /**
@@ -230,7 +229,6 @@ const void BTreeIndex::placeNewChild(PageKeyPair<int> &newChildEntry, NonLeafNod
  */
 const void BTreeIndex::insertEntryHelper(bool isLeaf, const PageId rootPageID,
                                          PageKeyPair<int> &newChildEntry, RIDKeyPair<int> entryPair) {
-//    std::cout << "test" << std::endl;
     Page* rootPage;
     bufMgr->readPage(file, rootPageID, rootPage);
     if (isLeaf) {
@@ -313,7 +311,7 @@ BTreeIndex::splitNonLeaf(NonLeafNodeInt *leftNonLeafNode, PageId leftPageId, Pag
     // set newChildEntry
     newChildEntry.set(rightPagId, keyArray[half]);
     rightNonLeafNode->pageNoArray[0] = pidArray[half+1];
-    ++half; // TODO: skip the half one, push up!
+    ++half; // TODO: skip the half one(smallest on right), push up!
     // construct newLeafNode
     for (int i = 0; half < nodeOccupancy + 1; ++i, ++half) {
         rightNonLeafNode->keyArray[i] = keyArray[half];
@@ -381,13 +379,11 @@ const void BTreeIndex::splitLeaf(LeafNodeInt *leftLeafNode, PageKeyPair<int> &ne
     for (int i = 0; i < half; ++i) {
         leftLeafNode->keyArray[i] = keyArray[i];
         leftLeafNode->ridArray[i] = ridArray[i];
-//        std::cout << "old: " << keyArray[i] << std::endl;
     }
     // construct newLeafNode
     for (int i = 0; half < leafOccupancy + 1; ++i, ++half) {
         rightLeafNode->keyArray[i] = keyArray[half];
         rightLeafNode->ridArray[i] = ridArray[half];
-//        std::cout << "new: " << keyArray[half] << std::endl;
     }
     rightLeafNode->rightSibPageNo = leftLeafNode->rightSibPageNo;
     // set newChildEntry and sibling pointer
@@ -494,10 +490,6 @@ const void BTreeIndex::startScan(const void* lowValParm,
         bool alreadyExceed = false;
         LeafNodeInt *leafNodeInt = (LeafNodeInt *) currentPageData;
         for (; i < leafOccupancy && leafNodeInt->ridArray[i].page_number != 0; ++i) {
-            // ToDO: delete
-//            if (lowValInt == 996) {
-//                std::cout << leafNodeInt->keyArray[i] << std::endl;
-//            }
             if (highOpParm == LT) {
                 if (leafNodeInt->keyArray[i] >= highValInt) {
                     alreadyExceed = true;
@@ -602,6 +594,8 @@ const void BTreeIndex::endScan()
         bufMgr->unPinPage(file, currentPageNum, false);
         scanExecuting = false;
     } catch (PageNotPinnedException e) {
+
+    } catch (HashNotFoundException e) {
 
     }
 

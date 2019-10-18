@@ -294,6 +294,21 @@ class BTreeIndex {
 	const void insertEntryHelper(bool isLeaf, const PageId rootPageID, PageKeyPair<int> &newChildEntry,
                                  RIDKeyPair<int> entryPair);
 
+    const void placeEntry(RIDKeyPair<int> entryPair, LeafNodeInt *node);
+
+    const void splitLeaf(LeafNodeInt *leftLeafNode, PageKeyPair<int> &newChildEntry, RIDKeyPair<int> entryPair,
+                         PageId leftPageId);
+
+    const void placeNewChild(PageKeyPair<int> &newChildEntry, NonLeafNodeInt *node);
+
+    const void splitNonLeaf(NonLeafNodeInt *leftNonLeafNode, PageId leftPageId, PageKeyPair<int> &newChildEntry);
+
+    const void changeRootPageNum(const PageId newRootPageNum);
+
+    const int findSmallestKey(NonLeafNodeInt *root);
+
+    const PageId findFirstLeaf(NonLeafNodeInt *root);
+
 public:
 
   /**
@@ -366,21 +381,6 @@ public:
 	 * @throws ScanNotInitializedException If no scan has been initialized.
 	**/
 	const void endScan();
-
-    const void placeEntry(RIDKeyPair<int> entryPair, LeafNodeInt *node);
-
-    const void splitLeaf(LeafNodeInt *leftLeafNode, PageKeyPair<int> &newChildEntry, RIDKeyPair<int> entryPair,
-                         PageId leftPageId);
-
-    const void placeNewChild(PageKeyPair<int> &newChildEntry, NonLeafNodeInt *node);
-
-    const void splitNonLeaf(NonLeafNodeInt *leftNonLeafNode, PageId leftPageId, PageKeyPair<int> &newChildEntry);
-
-    const void changeRootPageNum(const PageId newRootPageNum);
-
-    const int findSmallestKey(NonLeafNodeInt *root);
-
-    const PageId findFirstLeaf(NonLeafNodeInt *root);
 };
 
 }
