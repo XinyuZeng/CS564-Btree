@@ -43,6 +43,7 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
     attributeType = attrType;
     leafOccupancy = INTARRAYLEAFSIZE;
     nodeOccupancy = INTARRAYNONLEAFSIZE;
+//    nodeOccupancy = 12;
     scanExecuting = false;
     nextEntry = leafOccupancy;  // set for simplicity in scanNext
     currentPageNum = 0;
@@ -122,6 +123,7 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
 // TODO: think about others need to be destructed
 BTreeIndex::~BTreeIndex()
 {
+    scanExecuting = false;
     bufMgr->flushFile(file);
 //    if (currentPageNum != 0)
 //        try {
@@ -132,6 +134,11 @@ BTreeIndex::~BTreeIndex()
     delete file;
 }
 
+/**
+ * Change the rootPageNum to the newRootPageNum, and change the info in
+ * metaPage as well.
+ * @param newRootPageNum the new rootPageNum to set in private variable
+ */
 const void BTreeIndex::changeRootPageNum(const PageId newRootPageNum) {
     rootPageNum = newRootPageNum;
     Page* headerPage;
@@ -156,6 +163,12 @@ const void BTreeIndex::insertEntry(const void *key, const RecordId rid)
     }
 }
 
+/**
+ * place the entryPair in the recurrent Leaf node
+ * @requires node has space
+ * @param entryPair the record-key pair to be placed
+ * @param node the leaf node
+ */
 const void BTreeIndex::placeEntry(RIDKeyPair<int> entryPair, LeafNodeInt *node) {
     int i = 0;
     while (node->ridArray[i].page_number != 0 && node->keyArray[i] < entryPair.key) {
@@ -178,7 +191,12 @@ const void BTreeIndex::placeEntry(RIDKeyPair<int> entryPair, LeafNodeInt *node) 
         node->keyArray[i] = entryPair.key;
     }
 }
-
+/**
+ * place the newChildEntry into the NonLeaf node
+ * @requires node has space
+ * @param newChildEntry  PageKeyPair to be placed
+ * @param node the NonLeafNode
+ */
 // TODO: figure out whether need to care the left most pointer
 const void BTreeIndex::placeNewChild(PageKeyPair<int> &newChildEntry, NonLeafNodeInt *node) {
     int i = 0;
@@ -203,6 +221,13 @@ const void BTreeIndex::placeNewChild(PageKeyPair<int> &newChildEntry, NonLeafNod
     }
 }
 
+/**
+ * Recursive function to insert an entry into root.
+ * @param isLeaf Current root is leaf or not
+ * @param rootPageID PageId of current root
+ * @param newChildEntry PageKeyPair used to "pop-up" if split happens
+ * @param entryPair Target entry to be inserted
+ */
 const void BTreeIndex::insertEntryHelper(bool isLeaf, const PageId rootPageID,
                                          PageKeyPair<int> &newChildEntry, RIDKeyPair<int> entryPair) {
 //    std::cout << "test" << std::endl;
@@ -244,7 +269,12 @@ const void BTreeIndex::insertEntryHelper(bool isLeaf, const PageId rootPageID,
     }
     bufMgr->unPinPage(file, rootPageID, true);
 }
-
+/**
+ * Split NonLeafNode into two NonLeafNode
+ * @param leftNonLeafNode The old NonLeafNode to be split
+ * @param leftPageId PageId of the old NonLeafNode
+ * @param newChildEntry PageKeyPair of the new allocated node to be pushed up
+ */
 const void
 BTreeIndex::splitNonLeaf(NonLeafNodeInt *leftNonLeafNode, PageId leftPageId, PageKeyPair<int> &newChildEntry) {
     PageId rightPagId;
@@ -280,15 +310,17 @@ BTreeIndex::splitNonLeaf(NonLeafNodeInt *leftNonLeafNode, PageId leftPageId, Pag
         leftNonLeafNode->keyArray[i] = keyArray[i];
         leftNonLeafNode->pageNoArray[i+1] = pidArray[i+1];
     }
+    // set newChildEntry
+    newChildEntry.set(rightPagId, keyArray[half]);
+    rightNonLeafNode->pageNoArray[0] = pidArray[half+1];
+    ++half; // TODO: skip the half one, push up!
     // construct newLeafNode
     for (int i = 0; half < nodeOccupancy + 1; ++i, ++half) {
         rightNonLeafNode->keyArray[i] = keyArray[half];
-        rightNonLeafNode->pageNoArray[i] = pidArray[half+1];
+        rightNonLeafNode->pageNoArray[i+1] = pidArray[half+1];
     }
     if (leftNonLeafNode->level == 1)
         rightNonLeafNode->level = 1;
-    // set newChildEntry
-    newChildEntry.set(rightPagId, findSmallestKey(leftNonLeafNode));
     // if left is root, then create new root pointing to those two nodes
     // and change rootPageNum. Set newChildEntry to 0 because no need to use
     if (leftPageId == this->rootPageNum) {
@@ -308,6 +340,14 @@ BTreeIndex::splitNonLeaf(NonLeafNodeInt *leftNonLeafNode, PageId leftPageId, Pag
     bufMgr->unPinPage(file, rightPagId, true);
 }
 
+/**
+ * Split leftLeafNode into two leaf node, the smallest key in right half and
+ * the pageNo of right leaf got copied up by newChildEntry
+ * @param leftLeafNode Old node to be split
+ * @param newChildEntry Got copied up
+ * @param entryPair The new inserted data
+ * @param leftPageId PageId of left leaf
+ */
 const void BTreeIndex::splitLeaf(LeafNodeInt *leftLeafNode, PageKeyPair<int> &newChildEntry, RIDKeyPair<int> entryPair,
                                  PageId leftPageId) {
     PageId rightPageID;
@@ -373,7 +413,11 @@ const void BTreeIndex::splitLeaf(LeafNodeInt *leftLeafNode, PageKeyPair<int> &ne
     bufMgr->unPinPage(file, rightPageID, true);
 }
 
-// find the smallest key value in the subtree
+/**
+ * Find the smallest key value in the subtree
+ * @param root Root of the tree
+ * @return Smallest key inside root
+ */
 const int BTreeIndex::findSmallestKey(NonLeafNodeInt *root) {
     PageId targetPageId = root->pageNoArray[0];
     Page *targetPage;
@@ -390,7 +434,11 @@ const int BTreeIndex::findSmallestKey(NonLeafNodeInt *root) {
     return result;
 }
 
-// find the smallest key value in the subtree
+/**
+ * Find the first leaf value in the subtree
+ * @param root Root of the tree
+ * @return PageId of first leaf
+ */
 const PageId BTreeIndex::findFirstLeaf(NonLeafNodeInt *root) {
     PageId targetPageId = root->pageNoArray[0];
     Page *targetPage;
@@ -400,7 +448,7 @@ const PageId BTreeIndex::findFirstLeaf(NonLeafNodeInt *root) {
         result = root->pageNoArray[0];
     } else {
         NonLeafNodeInt *target = (NonLeafNodeInt *)targetPage;
-        result = findSmallestKey(target);
+        result = findFirstLeaf(target);
     }
     bufMgr->unPinPage(file, targetPageId, false);
     return result;
