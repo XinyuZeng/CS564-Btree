@@ -1,0 +1,7 @@
+My test cases are included in main.cpp. They are basically two functions: myTest1 and myTest2.
+
+Both tests are designed by a brute force testing paradigm. First create a relation randomly with significant large amount of size, set the seed of rand by current time so the rand() function in createRelationRandom is real random. Use a for loop to repeat such a test by a large amount of times, each time we call srand(time(0)) again to reset the seed, so each time we get a different random relation sequence.
+
+The problem of myTest1 is that, as I mentioned in piazza, INTARRAYLEAFSIZE is 682 and INTARRAYNONLEAFSIZE is 1023, which means in order to test our split for nonleaf, we need a relation file with 341*1024 + 1 = 349185 relation size. So I set relationSize to 400000 to test this. This will run really slow and can prevent us to implement such brute force method.
+
+The solution is in myTest2 and btree.h. As Kyle answered in piazza, we change the value of INTARRAYLEAFSIZE and INTARRAYNONLEAFSIZE in btree.h to a small number, let's say, 9 or 10. Then we can reduce the relation size to 50000, and change the number of loops to 100, or whatever large number! Then we can run myTest2 and wait to see if it passes. I set the loop to a really large number and run it for 2 hours without any fails. So I believe my program works well enough.

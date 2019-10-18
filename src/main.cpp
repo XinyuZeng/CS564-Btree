@@ -42,7 +42,7 @@ using namespace badgerdb;
 int testNum = 1;
 const std::string relationName = "relA";
 //If the relation size is changed then the second parameter 2 chechPassFail may need to be changed to number of record that are expected to be found during the scan, else tests will erroneously be reported to have failed.
-const int	relationSize = 5000;
+int relationSize = 5000;
 std::string intIndexName, doubleIndexName, stringIndexName;
 
 // This is the structure for tuples in the base relation
@@ -75,6 +75,10 @@ void test1();
 void test2();
 void test3();
 void test4();
+void myTest1();
+void myTest2();
+void myIntTests1();
+void myIntTests2();
 void errorTests();
 void deleteRelation();
 
@@ -139,13 +143,103 @@ int main(int argc, char **argv)
 
 	File::remove(relationName);
 
-	test1();
-	test2();
-	test3();
+	myTest1();
+//	myTest2();
+//	test1();
+//	test2();
+//	test3();
 //    test4();
 //	errorTests();
 
   return 1;
+}
+
+/**
+ * This test is designed to build a large random relation file(relation size: 400000), which
+ * can cause the nonleaf to split. Run this test for 10 times to check if it works or not.
+ * This test will need significant amount of time to run.
+ */
+void myTest1()
+{
+    std::cout << "--------------------" << std::endl;
+    std::cout << "createRelationRandom" << std::endl;
+    relationSize = 400000;
+    for (int i = 0; i < 10; ++i) {
+        srand(time(0));
+        createRelationRandom();
+        myIntTests1();
+        try
+        {
+            File::remove(intIndexName);
+        }
+        catch(FileNotFoundException e)
+        {
+        }
+        deleteRelation();
+    }
+    std::cout << "myTest1 finishes successfully" << std::endl;
+}
+
+void myIntTests1()
+{
+    std::cout << "Create a B+ Tree index on the integer field" << std::endl;
+    BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
+
+    // run some tests
+    checkPassFail(intScan(&index,25,GT,40,LT), 14)
+    checkPassFail(intScan(&index,20,GTE,35,LTE), 16)
+    checkPassFail(intScan(&index,-3,GT,3,LT), 3)
+    checkPassFail(intScan(&index,996,GT,1001,LT), 4)
+    checkPassFail(intScan(&index,0,GT,1,LT), 0)
+    checkPassFail(intScan(&index,300,GT,400,LT), 99)
+    checkPassFail(intScan(&index,3000,GTE,4000,LT), 1000)
+    checkPassFail(intScan(&index,3000,GTE,4000,LT), 1000)
+    checkPassFail(intScan(&index,30000,GTE,40000,LT), 10000)
+    checkPassFail(intScan(&index,-30000,GTE,350000,LT), 350000)
+}
+
+/**
+ * This test is designed to reduce the time for myTest1. And make the tree with more height.
+ * ATTENTION: to ensure this test is effective, need to change INTARRAYLEAFSIZE in btree.h to 9.
+ */
+void myTest2()
+{
+    std::cout << "--------------------" << std::endl;
+    std::cout << "createRelationRandom" << std::endl;
+    relationSize = 50000;
+    for (int i = 0; i < 10; ++i) {
+        srand(time(0));
+        createRelationRandom();
+        myIntTests2();
+        try
+        {
+            File::remove(intIndexName);
+        }
+        catch(FileNotFoundException e)
+        {
+        }
+        deleteRelation();
+    }
+    std::cout << "myTest2 finishes successfully" << std::endl;
+}
+
+void myIntTests2()
+{
+    std::cout << "Create a B+ Tree index on the integer field" << std::endl;
+    BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
+
+    // run some tests
+    checkPassFail(intScan(&index,25,GT,40,LT), 14)
+    checkPassFail(intScan(&index,20,GTE,35,LTE), 16)
+    checkPassFail(intScan(&index,-3,GT,3,LT), 3)
+    checkPassFail(intScan(&index,996,GT,1001,LT), 4)
+    checkPassFail(intScan(&index,0,GT,1,LT), 0)
+    checkPassFail(intScan(&index,300,GT,400,LT), 99)
+    checkPassFail(intScan(&index,3000,GTE,4000,LT), 1000)
+    checkPassFail(intScan(&index,3000,GTE,4000,LT), 1000)
+    checkPassFail(intScan(&index,30000,GTE,40000,LT), 10000)
+    checkPassFail(intScan(&index,-30000,GTE,500,LT), 500)
+    checkPassFail(intScan(&index,40000,GTE,50001,LT), 10000)
 }
 
 void test1()
@@ -436,6 +530,8 @@ int intScan(BTreeIndex * index, int lowVal, Operator lowOp, int highVal, Operato
 			RECORD myRec = *(reinterpret_cast<const RECORD*>(curPage->getRecord(scanRid).data()));
 			bufMgr->unPinPage(file1, scanRid.page_number, false);
 
+//            std::cout << "at:" << scanRid.page_number << "," << scanRid.slot_number;
+//            std::cout << " -->:" << myRec.i << ":" << myRec.d << ":" << myRec.s << ":" <<std::endl;
 			if( numResults < 5 )
 			{
 				std::cout << "at:" << scanRid.page_number << "," << scanRid.slot_number;

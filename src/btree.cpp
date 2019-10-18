@@ -576,7 +576,18 @@ const void BTreeIndex::scanNext(RecordId& outRid)
             bufMgr->unPinPage(file, currentPageNum, false);
             currentPageNum = nextPageNum;
             bufMgr->readPage(file, currentPageNum, currentPageData);
+            LeafNodeInt *leafNodeInt = (LeafNodeInt *)currentPageData;
             nextEntry = 0;
+            // need to check first entry in next leaf is valid or not
+            if (highOp == LT) {
+                if (leafNodeInt->keyArray[nextEntry] >= highValInt) {
+                    nextEntry = -1;
+                }
+            } else {
+                if (leafNodeInt->keyArray[nextEntry] > highValInt) {
+                    nextEntry = -1;
+                }
+            }
         }
     }
 }
