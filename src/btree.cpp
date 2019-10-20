@@ -44,7 +44,6 @@ BTreeIndex::BTreeIndex(const std::string & relationName,
     attributeType = attrType;
     leafOccupancy = INTARRAYLEAFSIZE;
     nodeOccupancy = INTARRAYNONLEAFSIZE;
-//    nodeOccupancy = 12;
     scanExecuting = false;
     nextEntry = leafOccupancy;  // set for simplicity in scanNext
     currentPageNum = 0;
@@ -530,13 +529,11 @@ const void BTreeIndex::startScan(const void* lowValParm,
             throw NoSuchKeyFoundException();
         }
         if (getFirst) {
-//            bufMgr->unPinPage(file, currentPageNum, false);
             break;
         } else {    // not get the entry
             PageId nextPageNum = leafNodeInt->rightSibPageNo;
             bufMgr->unPinPage(file, currentPageNum, false);
             if (nextPageNum == 0) {
-//                break;
                 // no next page, not found such key
                 throw NoSuchKeyFoundException();
             }
@@ -612,8 +609,8 @@ const void BTreeIndex::endScan()
         throw ScanNotInitializedException();
     }
     try {
-        bufMgr->unPinPage(file, currentPageNum, false);
         scanExecuting = false;
+        bufMgr->unPinPage(file, currentPageNum, false);
     } catch (PageNotPinnedException e) {
 
     } catch (HashNotFoundException e) {

@@ -150,8 +150,8 @@ int main(int argc, char **argv)
 //	myTest1();
 //	myTest2();
 //	myTest3();
-	myTest4();
-//	test1();
+//	myTest4();
+	test1();
 //	test2();
 //	test3();
 //	errorTests();
