@@ -431,23 +431,33 @@ const int BTreeIndex::findSmallestKey(NonLeafNodeInt *root) {
 }
 
 /**
- * Find the first leaf value in the subtree
+ * Find the first leaf value in the subtree satisfying scan criteria
  * @param root Root of the tree
  * @return PageId of first leaf
  */
 const PageId BTreeIndex::findFirstLeaf(NonLeafNodeInt *root) {
-    PageId targetPageId = root->pageNoArray[0];
-    Page *targetPage;
-    bufMgr->readPage(file, targetPageId, targetPage);
-    PageId result;
+    int targetKey = lowOp == GT ? lowValInt + 1 : lowValInt;
+    PageId targetPageId = 0;
+    int i = 0;
+    for (i = 0; i < nodeOccupancy && root->pageNoArray[i+1] != 0; ++i) {
+        if (root->keyArray[i] > targetKey) {
+            targetPageId = root->pageNoArray[i];
+            break;
+        }
+    }
+    if (targetPageId == 0)
+        targetPageId = root->pageNoArray[i];
     if (root->level == 1) {
-        result = root->pageNoArray[0];
+        return targetPageId;
     } else {
+        Page *targetPage;
+        PageId result;
+        bufMgr->readPage(file, targetPageId, targetPage);
         NonLeafNodeInt *target = (NonLeafNodeInt *)targetPage;
         result = findFirstLeaf(target);
+        bufMgr->unPinPage(file, targetPageId, false);
+        return result;
     }
-    bufMgr->unPinPage(file, targetPageId, false);
-    return result;
 }
 
 // -----------------------------------------------------------------------------

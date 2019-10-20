@@ -143,13 +143,12 @@ int main(int argc, char **argv)
 
 	File::remove(relationName);
 
-	myTest1();
+//	myTest1();
 //	myTest2();
-//	test1();
-//	test2();
-//	test3();
-//    test4();
-//	errorTests();
+	test1();
+	test2();
+	test3();
+	errorTests();
 
   return 1;
 }
