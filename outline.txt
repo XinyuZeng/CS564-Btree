@@ -1,7 +1,19 @@
-My test cases are included in main.cpp. They are basically two functions: myTest1 and myTest2.
+My test cases are included in main.cpp. They are basically four functions: myTest1, myTest2, myTest3, myTest4. Starts from line 162.
 
-Both tests are designed by a brute force testing paradigm. First create a relation randomly with significant large amount of size, set the seed of rand by current time so the rand() function in createRelationRandom is real random. Use a for loop to repeat such a test by a large amount of times, each time we call srand(time(0)) again to reset the seed, so each time we get a different random relation sequence.
+Both first two tests are designed by a brute force testing paradigm. First create a relation randomly with significant large amount of size, set the seed of rand by current time so the rand() function in createRelationRandom is real random. Use a for loop to repeat such a test by a large amount of times, each time we call srand(time(0)) again to reset the seed, so each time we get a different random relation sequence.
 
 The problem of myTest1 is that, as I mentioned in piazza, INTARRAYLEAFSIZE is 682 and INTARRAYNONLEAFSIZE is 1023, which means in order to test our split for nonleaf, we need a relation file with 341*1024 + 1 = 349185 relation size. So I set relationSize to 400000 to test this. This will run really slow and can prevent us to implement such brute force method.
 
 The solution is in myTest2 and btree.h. As Kyle answered in piazza, we change the value of INTARRAYLEAFSIZE and INTARRAYNONLEAFSIZE in btree.h to a small number, let's say, 9 or 10. Then we can reduce the relation size to 50000, and change the number of loops to 100, or whatever large number! Then we can run myTest2 and wait to see if it passes. I set the loop to a really large number and run it for 2 hours without any fails. So I believe my program works well enough.
+
+Update 10/19: 
+
+Add new test myTest3
+This test is designed to test some corner cases. I create a relation forward with 400,000 size so that the nonleaf split can be included. 
+1<=x<=341, 1<=x<=342: test the end key is in next leaf
+340<=x<=341: test the start key is the end of current leaf
+341<=x<=341: test the only one case
+1<=x<=399999: general test
+
+Add new test myTest4
+This test is designed to cover enough scan intervals. I use random() to decide lowValInt and highValInt, and create a random relation with random seed. I run the checkPassFail with random lowValInt and highValInt for 10000 times to ensure my btree does not have bugs. Actually, in order to create relation and do scan quickly, I remained relationSize as 5000, and change nonleaf size to 9, the program works well and ends within 3 minutes.

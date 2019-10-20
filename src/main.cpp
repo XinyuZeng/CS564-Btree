@@ -77,8 +77,12 @@ void test3();
 void test4();
 void myTest1();
 void myTest2();
+void myTest3();
+void myTest4();
 void myIntTests1();
 void myIntTests2();
+void myIntTests3();
+void myIntTests4();
 void errorTests();
 void deleteRelation();
 
@@ -145,10 +149,12 @@ int main(int argc, char **argv)
 
 //	myTest1();
 //	myTest2();
-	test1();
-	test2();
-	test3();
-	errorTests();
+//	myTest3();
+	myTest4();
+//	test1();
+//	test2();
+//	test3();
+//	errorTests();
 
   return 1;
 }
@@ -199,7 +205,7 @@ void myIntTests1()
 
 /**
  * This test is designed to reduce the time for myTest1. And make the tree with more height.
- * ATTENTION: to ensure this test is effective, need to change INTARRAYLEAFSIZE in btree.h to 9.
+ * ATTENTION: to ensure this test is effective, need to change INTARRAYNONLEAFSIZE in btree.h to 9.
  */
 void myTest2()
 {
@@ -239,6 +245,73 @@ void myIntTests2()
     checkPassFail(intScan(&index,30000,GTE,40000,LT), 10000)
     checkPassFail(intScan(&index,-30000,GTE,500,LT), 500)
     checkPassFail(intScan(&index,40000,GTE,50001,LT), 10000)
+}
+
+/**
+ * Corner cases check. See myIntTests3 for details.
+ */
+void myTest3()
+{
+    std::cout << "--------------------" << std::endl;
+    std::cout << "createRelationForward" << std::endl;
+    relationSize = 400000;
+    createRelationForward();
+    myIntTests3();
+    try
+    {
+        File::remove(intIndexName);
+    }
+    catch(FileNotFoundException e)
+    {
+    }
+    deleteRelation();
+    std::cout << "myTest3 finishes successfully" << std::endl;
+}
+
+void myIntTests3() {
+    std::cout << "Create a B+ Tree index on the integer field" << std::endl;
+    BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
+    checkPassFail(intScan(&index,1,GTE,341,LTE), 341)
+    checkPassFail(intScan(&index,1,GTE,342,LTE), 342)
+    checkPassFail(intScan(&index,340,GTE,341,LTE), 2)
+    checkPassFail(intScan(&index,341,GTE,341,LTE), 1)
+    checkPassFail(intScan(&index,1,GTE,399999,LTE), 399999)
+}
+
+/**
+ * This test is designed to cover enough scan intervals. See myIntTests4 for details.
+ * Random relation with random seed with 400000 size is used.
+ */
+void myTest4()
+{
+    std::cout << "--------------------" << std::endl;
+    std::cout << "createRelationRandom" << std::endl;
+    relationSize = 400000;
+    srand(time(0));
+    createRelationRandom();
+    myIntTests4();
+    try
+    {
+        File::remove(intIndexName);
+    }
+    catch(FileNotFoundException e)
+    {
+    }
+    deleteRelation();
+    std::cout << "myTest4 finishes successfully" << std::endl;
+}
+
+/**
+ * Generate random scan intervals using random(). Loop for 10000 times.
+ */
+void myIntTests4() {
+    std::cout << "Create a B+ Tree index on the integer field" << std::endl;
+    BTreeIndex index(relationName, intIndexName, bufMgr, offsetof(tuple,i), INTEGER);
+    for (int i = 0; i < 10000; ++i) {
+        int low = random() % relationSize;
+        int hi = random() % (relationSize - 1 - low) + low;
+        checkPassFail(intScan(&index,low,GTE,hi,LTE), hi - low + 1)
+    }
 }
 
 void test1()
